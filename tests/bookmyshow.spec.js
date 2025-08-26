@@ -1,9 +1,13 @@
 require('dotenv').config();
 const { test, expect } = require('@playwright/test');
 const nodemailer = require('nodemailer');
+const bookingPage="https://in.bookmyshow.com/movies/bengaluru/coolie/ET00395817";
 
 test('Checking if tickets are available for a film', async ({page}) => {
-    await page.goto("https://in.bookmyshow.com/movies/bengaluru/coolie/ET00395817")
+    await page.goto(bookingPage);
+    const split=bookingPage.split("/");
+    const movie=split[5];
+    const location=split[4];
 
 const button = page.locator('button:has-text("Book tickets")').first();
 
@@ -12,8 +16,12 @@ const button = page.locator('button:has-text("Book tickets")').first();
         await button.click();
         //await page.waitForSelector('.sc-8f9mtj-0.sc-8f9mtj-1.sc-1vmod7e-0.cUKDnO.hxNpBB.fiWmpq', { state: 'visible' });
         const continueButton=await page.locator('div.sc-ttkokf-2.sc-ttkokf-3.bIIppr.hIYQmz');
-        await continueButton.click();
-        await sendEmailNotification();
+        await page.goto("https://www.district.in/");
+        await page.locator("span.dds-text-lg").click();
+        await page.getByPlaceholder("Search city, area or locality").fill(location);
+        //await page.locator("button.dds-h-\[52px\]:nth-child(1)").click();
+
+        //await sendEmailNotification();
         //await page.waitForSelector('.sc-ttkokf-2 sc-ttkokf-3 bIIppr hIYQmz', { state: 'visible' });
         //await page.click(".sc-ttkokf-2 sc-ttkokf-3 bIIppr hIYQmz");
 
