@@ -8,18 +8,25 @@ test('Checking if tickets are available for a film', async ({page}) => {
     const split=bookingPage.split("/");
     const movie=split[5];
     const location=split[4];
-
+    const capitalisedLocation=capitalizeFirstLetter(location);
 const button = page.locator('button:has-text("Book tickets")').first();
 
   if (await button.isVisible()) {
     console.log('Tickets available now');
-        await button.click();
-        //await page.waitForSelector('.sc-8f9mtj-0.sc-8f9mtj-1.sc-1vmod7e-0.cUKDnO.hxNpBB.fiWmpq', { state: 'visible' });
-        const continueButton=await page.locator('div.sc-ttkokf-2.sc-ttkokf-3.bIIppr.hIYQmz');
         await page.goto("https://www.district.in/");
         await page.locator("span.dds-text-lg").click();
         await page.getByPlaceholder("Search city, area or locality").fill(location);
-        //await page.locator("button.dds-h-\[52px\]:nth-child(1)").click();
+        const locationButton=await page.locator(`button:has-text("${capitalisedLocation}")`).first();
+        if (await locationButton.count()>0) {
+          await locationButton.click();
+        }
+        else {
+          console.log("Location not identified. Please ensure your location is clicked correctly from BMS before inputting the link");
+        }
+        await page.locator('div:has-text("Search for events, movies and restaurants") >> nth=6').click();
+        await page.locator('button:has-text("Movies")').click();
+        await page.locator('xpath=/html/body/div[2]/div/div/div/div/div[1]/div[1]/div/input').fill(movie); //used xpath
+        await page.locator(`div:has-text("${movie}")`).first().click(); //not working rn
 
         //await sendEmailNotification();
         //await page.waitForSelector('.sc-ttkokf-2 sc-ttkokf-3 bIIppr hIYQmz', { state: 'visible' });
@@ -32,6 +39,11 @@ const button = page.locator('button:has-text("Book tickets")').first();
     }
     await page.close();
 });
+
+function capitalizeFirstLetter(val) {
+    return String(val).charAt(0).toUpperCase() + String(val).slice(1);
+}
+
 
 async function sendEmailNotification() {
   
