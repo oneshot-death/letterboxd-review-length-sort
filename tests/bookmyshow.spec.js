@@ -1,37 +1,37 @@
 require('dotenv').config();
 const { test, expect } = require('@playwright/test');
 const nodemailer = require('nodemailer');
-const bookingPage="https://in.bookmyshow.com/movies/bengaluru/coolie/ET00395817";
+const bookingPage="https://in.bookmyshow.com";
+
+const fs = require("fs");
+
+function getConfig() {
+  const data = fs.readFileSync("config.json", "utf-8");
+  return JSON.parse(data);
+}
+
+const config = getConfig();
+console.log("Using config:", config);
 
 test('Checking if tickets are available for a film', async ({page}) => {
-    await page.goto(bookingPage);
-    const split=bookingPage.split("/");
-    const movie=split[5];
-    const location=split[4];
-    const capitalisedLocation=capitalizeFirstLetter(location);
-const button = page.locator('button:has-text("Book tickets")').first();
+  await page.goto(bookingPage);
+  await page.locator('input[placeholder="Search for your city"]').fill(`${config.location}`);
+  await page.locator("xpath=/html/body/div[1]/div/div[2]/div/div/div[1]/div[2]/div[1]/div").click() //clicks the first input
+  await page.locator("xpath=/html/body/div[1]/div/div[2]/div[3]/div[1]/div[2]/div/div/div/div[1]/div[1]/div[2]/a/div").click() //see all
+  const movieLocator = page.locator(`a:has-text("hridayapoorvam")`).first();
+
+  // keep scrolling until the element is visible
+  while (!(await movieLocator.isVisible())) {
+    await page.mouse.wheel(0, 300); // scroll down a bit
+    await page.waitForTimeout(500); // small delay (so it feels natural)
+  }
+
+  await movieLocator.click();
+
+  const button = await page.locator('button:has-text("Book tickets")').first();
 
   if (await button.isVisible()) {
     console.log('Tickets available now');
-        await page.goto("https://www.district.in/");
-        await page.locator("span.dds-text-lg").click();
-        await page.getByPlaceholder("Search city, area or locality").fill(location);
-        const locationButton=await page.locator(`button:has-text("${capitalisedLocation}")`).first();
-        if (await locationButton.count()>0) {
-          await locationButton.click();
-        }
-        else {
-          console.log("Location not identified. Please ensure your location is clicked correctly from BMS before inputting the link");
-        }
-        await page.locator('div:has-text("Search for events, movies and restaurants") >> nth=6').click();
-        await page.locator('button:has-text("Movies")').click();
-        await page.locator('xpath=/html/body/div[2]/div/div/div/div/div[1]/div[1]/div/input').fill(movie); //used xpath
-        await page.locator(`div:has-text("${movie}")`).first().click(); //not working rn
-
-        //await sendEmailNotification();
-        //await page.waitForSelector('.sc-ttkokf-2 sc-ttkokf-3 bIIppr hIYQmz', { state: 'visible' });
-        //await page.click(".sc-ttkokf-2 sc-ttkokf-3 bIIppr hIYQmz");
-
 
     }
     else {
@@ -39,10 +39,6 @@ const button = page.locator('button:has-text("Book tickets")').first();
     }
     await page.close();
 });
-
-function capitalizeFirstLetter(val) {
-    return String(val).charAt(0).toUpperCase() + String(val).slice(1);
-}
 
 
 async function sendEmailNotification() {
