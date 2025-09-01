@@ -54,7 +54,7 @@ test('Checking if tickets are available for a film', async ({page}) => {
   else {
     await page.goto(filmUrl)
   }
-  const button = await page.locator('button:has-text("Book tickets")').first().click();
+  const button = await page.locator('button:has-text("Book tickets")').first()
   
 
   if (await button.isVisible()) {
