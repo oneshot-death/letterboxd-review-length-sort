@@ -32,6 +32,25 @@ function getMovieUrl(movieName) {
   return data[movieName] || null;
 }
 
+function checkMail(movieName) {
+  const file="movies.json"
+  const data = JSON.parse(fs.readFileSync(file, "utf-8"));
+  const str=movieName+"mail";
+  if (!data[str]) {
+    data[str]=0;
+    fs.writeFileSync(file,JSON.stringify(data, null, 2))
+    return 0;
+  }
+  else {
+    if (data[str]==0) {
+      return 0
+    }
+    else {
+      return 1;
+    }
+  }
+}
+
 test('Checking if tickets are available for a film', async ({page}) => {
   let filmUrl=getMovieUrl(`${config.movie}`)
   if (!filmUrl) {
@@ -55,42 +74,47 @@ test('Checking if tickets are available for a film', async ({page}) => {
     await page.goto(filmUrl)
   }
   const button = await page.locator('button:has-text("Book tickets")').first()
-  
-
+  let mailFlag
   if (await button.isVisible()) {
     console.log('Tickets available now');
-
+    mailFlag=checkMail(`${config.movie}`)
     }
     else {
         console.log("Hold up mf");
     }
-    await page.close();
+  if (mailFlag==0) {
+    await sendEmailNotification()
+    const file='movies.json'
+    const data=JSON.parse(fs.readFileSync(file,"utf-8"))
+    const str=`${config.movie}`+ "mail"
+    data[str]=1
+    fs.writeFileSync(file,JSON.stringify(data, null, 2))
+  }
+  await sendEmailNotification()
+  await page.close()
 });
 
 
 async function sendEmailNotification() {
-  
   let transporter = nodemailer.createTransport({
-    service: 'gmail', 
+    service: 'gmail',
     auth: {
       user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS  
+      pass: process.env.EMAIL_PASS
     }
   });
 
-
   let mailOptions = {
     from: process.env.EMAIL_USER,
-    to: process.env.EMAIL_USER,  // Replace with ur email
+    to: process.env.EMAIL_USER,
     subject: 'Tickets are now available!',
     text: 'The tickets for the film are now available. Please check it out on BookMyShow.'
   };
 
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      console.log('Error sending email:', error);
-    } else {
-      console.log('Email sent:', info.response);
-    }
-  });
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log("Email sent:", info.response);
+  } catch (err) {
+    console.error("Error sending email:", err);
+  }
 }
