@@ -1,2 +1,3 @@
 https://playwright.dev/docs/locators
 https://expertbeacon.com/how-to-use-the-browser-console-to-scrape-and-save-data-in-a-file-with-javascript/
+https://www.baeldung.com/cs/threaded-binary-trees
