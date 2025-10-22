@@ -21,7 +21,7 @@ for (let i = 0; i < total; i++) {
   // extract the HTML to preserve <p> structure
   const reviewHTML = await parent.innerHTML();
 
-  // replace <p>...</p> with line breaks, remove other tags (what concept is used here)
+  // replace <p>...</p> with line breaks, remove other tags
   let formattedText = reviewHTML
     .replace(/<\/p>\s*<p>/gi, '\n\n') // paragraph spacing
     .replace(/<\/?p[^>]*>/gi, '')     // remove p tags themselves
@@ -31,7 +31,7 @@ for (let i = 0; i < total; i++) {
 
   // word count filter
   const wordCount = formattedText.split(/\s+/).filter(Boolean).length;
-  const minWordCount = 100; // adjust threshold as you like
+  const minWordCount = 100;
 
   if (wordCount < minWordCount) {
     console.log(`Skipped short review (${wordCount} words)`);
@@ -40,7 +40,7 @@ for (let i = 0; i < total; i++) {
 
   if (formattedText && formattedText !== longReviewChecking.previousReview) {
     reviewCount += 1;
-    longReviewChecking.previousReview = formattedText; //how does it store previous text?
+    longReviewChecking.previousReview = formattedText;
 
     fs.appendFileSync(
       'reviews.txt',
@@ -71,7 +71,7 @@ for (let i = 0; i < total; i++) {
     }
   }
 
-  return reviewCount; //what is the purpose of this if return alraedy exists at the top
+  return reviewCount;
 }
 
 longReviewChecking.previousReview = null;
