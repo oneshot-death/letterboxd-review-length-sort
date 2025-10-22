@@ -1,38 +1,63 @@
 const { test, expect } = require('@playwright/test');
 const fs = require('fs');
+test.setTimeout(120000)
 
 async function longReviewChecking(page, minReviews = 5, reviewCount = 0) {
   const moreButtons = page.getByText('more');
   const total = await moreButtons.count();
 
-  for (let i = 0; i < total-1; i++) {
-    const btn = moreButtons.nth(i);
-    //await btn.scrollIntoViewIfNeeded();
-    if (await btn.isVisible()) {
-      await btn.click();
-      await page.waitForTimeout(200);
-    } else {
-      continue;
-    }
+for (let i = 0; i < total; i++) {
+  const btn = moreButtons.nth(i);
 
-    const parent = btn.locator('..'); 
-    const reviewText = (await parent.textContent())?.trim() || '';
-
-    if (reviewText && reviewText !== '' && reviewText !== longReviewChecking.previousReview) {
-      reviewCount += 1;
-      longReviewChecking.previousReview = reviewText; // storing last saved review
-
-      fs.appendFileSync('reviews.txt', `\n--- Review ${reviewCount} ---\n${reviewText}\n`, 'utf8');
-      console.log(`Saved Review ${reviewCount}`);
-    } else {
-      console.log(`Skipped duplicate/empty review at index ${i}`);
-    }
-
-    if (reviewCount >= minReviews) {
-      console.log('Reached minimum reviews:', reviewCount);
-      return reviewCount;
-    }
+  if (await btn.isVisible()) {
+    await btn.click();
+    await page.waitForTimeout(2000);
+  } else {
+    continue;
   }
+
+  const parent = btn.locator('..');
+
+  // extract the HTML to preserve <p> structure
+  const reviewHTML = await parent.innerHTML();
+
+  // replace <p>...</p> with line breaks, remove other tags (what concept is used here)
+  let formattedText = reviewHTML
+    .replace(/<\/p>\s*<p>/gi, '\n\n') // paragraph spacing
+    .replace(/<\/?p[^>]*>/gi, '')     // remove p tags themselves
+    .replace(/<br\s*\/?>/gi, '\n')    // line breaks
+    .replace(/<[^>]+>/g, '')          // strip any remaining HTML
+    .trim();
+
+  // word count filter
+  const wordCount = formattedText.split(/\s+/).filter(Boolean).length;
+  const minWordCount = 100; // adjust threshold as you like
+
+  if (wordCount < minWordCount) {
+    console.log(`Skipped short review (${wordCount} words)`);
+    continue;
+  }
+
+  if (formattedText && formattedText !== longReviewChecking.previousReview) {
+    reviewCount += 1;
+    longReviewChecking.previousReview = formattedText; //how does it store previous text?
+
+    fs.appendFileSync(
+      'reviews.txt',
+      `\n--- Review ${reviewCount} (${wordCount} words) ---\n${formattedText}\n`,
+      'utf8'
+    );
+    console.log(`Saved Review ${reviewCount}`);
+  } else {
+    console.log(`Skipped duplicate or empty review at index ${i}`);
+  }
+
+  if (reviewCount >= minReviews) {
+    console.log('Reached minimum reviews:', reviewCount);
+    return reviewCount;
+  }
+}
+
 
   if (reviewCount < minReviews) {
     const nextBtn = page.locator('.next');
@@ -46,7 +71,7 @@ async function longReviewChecking(page, minReviews = 5, reviewCount = 0) {
     }
   }
 
-  return reviewCount;
+  return reviewCount; //what is the purpose of this if return alraedy exists at the top
 }
 
 longReviewChecking.previousReview = null;
@@ -65,4 +90,3 @@ test('review length', async ({ page }) => {
   const finalCount = await longReviewChecking(page, 5, 0);
   console.log('Done. Total reviews saved:', finalCount);
 });
-//try using with .reveal to check if that works. also with proper p tags
